@@ -23,6 +23,7 @@ import { useNavigation } from "expo-router";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { RootStackParamList } from "@/types/navigation";
+import { Profile } from "../(tabs)/profile";
 
 interface MentorDetail {
   id: string;
@@ -53,6 +54,8 @@ export default function MentorDetailScreen() {
   const mentorId = route.params?.id;
   const navigation = useNavigation();
   const [requestStatus, setRequestStatus] = useState(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
     Poppins_700Bold,
@@ -65,10 +68,33 @@ export default function MentorDetailScreen() {
       );
     }
   };
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch(
+          `https://skripsi.krayu.shop/api/alumni/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await response.json();
+        setProfile(data.data); // Assuming profile data is under "data"
+      } catch (error) {
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchProfile();
+  }, [token]);
   const handleContactMentor = () => {
     if (mentor?.phone_number) {
-      const contactUrl = `https://wa.me/${mentor.phone_number}`; // Menggunakan nomor telepon untuk WhatsApp
+      const message = encodeURIComponent(
+        `Halo bapak, saya ${profile?.name} siap untuk mengikuti program mentorship IKA SMADAJO`
+      );
+      const contactUrl = `https://wa.me/${mentor.phone_number}?text=${message}`; // Menambahkan pesan otomatis ke URL
       Linking.openURL(contactUrl).catch((err) =>
         console.error("Failed to open contact URL:", err)
       );
@@ -84,6 +110,7 @@ export default function MentorDetailScreen() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setRequestStatus(response.data.data.request_status);
+      console.log(response.data.data.request_status);
     } catch (error) {
       console.error("Error checking request status:", error);
     }

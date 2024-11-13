@@ -43,7 +43,7 @@ const Carousel: React.FC<CarouselProps> = ({ images }) => {
           <View style={styles.carouselItem}>
             <Image
               source={item.source}
-              style={{ width: "100%", height: 180, marginTop: 30 }}
+              style={{ width: "100%", height: 180, marginTop: 45 }}
               resizeMode="cover"
             />
           </View>

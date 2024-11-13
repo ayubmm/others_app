@@ -28,11 +28,6 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [fontsLoaded] = useFonts({
-    Poppins_400Regular,
-    Poppins_700Bold,
-  });
-
   const images = [
     {
       id: "1",
@@ -60,6 +55,8 @@ export default function HomeScreen() {
       );
       setNewsData(response.data.data);
     } catch (error) {
+      setNewsData([]);
+
       console.error("Error fetching news:", error);
     }
   };
@@ -95,25 +92,15 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [token]);
 
-  if (!fontsLoaded || loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "white", dark: "#1D3D47" }}
-      headerImage={<Carousel images={images} />}
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     >
+      <Carousel images={images} />
       <SafeAreaView style={styles.safearea}>
-        <ScrollView
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
+        <ScrollView>
           <View style={styles.headingContainer}>
             <Text style={styles.headingText}>Berita Terbaru</Text>
             <Text style={styles.subheadingText}>dan event terdekat</Text>
@@ -129,12 +116,14 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
-    </ParallaxScrollView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   safearea: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
     backgroundColor: "white",
     width: "100%",
   },

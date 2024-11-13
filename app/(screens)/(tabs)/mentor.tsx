@@ -24,6 +24,7 @@ import MentorshipInfo from "@/components/mentorship/mentorshipinfo";
 import MenteeRequestList from "@/components/mentorship/menteerequestlist";
 import { NativeStackNavigationProp } from "react-native-screens/lib/typescript/native-stack/types";
 import { RootStackParamList } from "@/types/navigation";
+import { Profile } from "./profile";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -80,7 +81,28 @@ export default function TabTwoScreen() {
   const [mentorRequests, setMentorRequests] = useState<MentorRequest[]>([]);
   const [menteeRequests, setMenteeRequests] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch(
+          `https://skripsi.krayu.shop/api/alumni/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await response.json();
+        setProfile(data.data); // Assuming profile data is under "data"
+      } catch (error) {
+      } finally {
+      }
+    };
 
+    fetchProfile();
+  }, [token]);
   useEffect(() => {
     const checkRole = async () => {
       try {
@@ -151,7 +173,23 @@ export default function TabTwoScreen() {
       }
     }
   };
-
+  useEffect(() => {
+    // Filter mentors based on search query whenever search query changes
+    if (searchQuery === "") {
+      setFilteredMentorData(mentorData); // If search query is empty, show all mentors
+    } else {
+      const filteredData = mentorData.filter((mentor) => {
+        // Convert to lowercase for case-insensitive search
+        const query = searchQuery.toLowerCase();
+        return (
+          mentor.name.toLowerCase().includes(query) || // Search in name
+          mentor.description.toLowerCase().includes(query) || // Search in expertise (description)
+          mentor.buttons.some((button) => button.toLowerCase().includes(query)) // Search in buttons (current job, education, expertise)
+        );
+      });
+      setFilteredMentorData(filteredData);
+    }
+  }, [searchQuery, mentorData]);
   const fetchMenteeRequests = async () => {
     try {
       const response = await axios.get(
@@ -173,7 +211,9 @@ export default function TabTwoScreen() {
       }));
 
       setMenteeRequests(requests);
-    } catch (error) {}
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const onRefresh = async () => {
@@ -222,7 +262,9 @@ export default function TabTwoScreen() {
             end={{ x: 1, y: 0 }}
             style={styles.backgroundText}
           >
-            <Text style={styles.textHeader}>Halo Nabil</Text>
+            <Text style={styles.textHeader}>
+              Halo {profile?.name.split(" ")[0]}{" "}
+            </Text>
           </LinearGradient>
         </View>
 
@@ -250,8 +292,13 @@ export default function TabTwoScreen() {
                       Status Pengajuan Mentoring
                     </Text>
                   </View>
-                  <View style={styles.mentoringList}>
-                    {mentorRequests.map((request) => (
+
+                  <ScrollView
+                    contentContainerStyle={styles.mentoringList}
+                    scrollEnabled={true} // Memungkinkan scroll
+                  >
+                    {/* Menampilkan dua item pertama */}
+                    {mentorRequests.slice(0, 1).map((request) => (
                       <View key={request.id} style={styles.requestCard}>
                         <Text style={styles.mentorName}>
                           Mentor: {request.mentorName}
@@ -261,7 +308,32 @@ export default function TabTwoScreen() {
                         </Text>
                       </View>
                     ))}
-                  </View>
+
+                    {/* Jika expanded, tampilkan sisa permintaan */}
+                    {isExpanded &&
+                      mentorRequests.slice(1).map((request) => (
+                        <View key={request.id} style={styles.requestCard}>
+                          <Text style={styles.mentorName}>
+                            Mentor: {request.mentorName}
+                          </Text>
+                          <Text style={styles.requestStatus}>
+                            Status: {request.status}
+                          </Text>
+                        </View>
+                      ))}
+                  </ScrollView>
+
+                  {/* Tombol untuk membuka atau menutup sisa permintaan jika lebih dari 2 */}
+                  {mentorRequests.length > 1 && (
+                    <TouchableOpacity
+                      style={styles.toggleButton}
+                      onPress={() => setIsExpanded(!isExpanded)}
+                    >
+                      <Text style={styles.toggleButtonText}>
+                        {isExpanded ? "Tutup" : "Lihat Semua"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             )}
@@ -290,11 +362,6 @@ export default function TabTwoScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   requestContainer: {
     marginVertical: 20,
     padding: 20,
@@ -306,6 +373,45 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  mentoringList: {
+    marginTop: 10,
+  },
+  requestCard: {
+    padding: 15,
+    borderColor: "#D9D9D9",
+    borderWidth: 1,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  mentorName: {
+    fontFamily: "Poppins_700Bold",
+    color: "#333",
+    fontSize: 14,
+  },
+  requestStatus: {
+    fontFamily: "Poppins_400Regular",
+    color: "#666",
+    fontSize: 13,
+    marginTop: 4,
+  },
+  toggleButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: "#2E4F82",
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  toggleButtonText: {
+    color: "white",
+    fontFamily: "Poppins_700Bold",
+    fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   rekomendasiText: {
     fontFamily: "Poppins_700Bold",
     textAlign: "left",
@@ -326,33 +432,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: "white",
   },
-  mentoringList: {
-    marginTop: 10,
-  },
+
   statusText: {
     fontFamily: "Poppins_700Bold",
     fontSize: 16,
     color: "#2C6F9C",
     marginLeft: 10,
   },
-  requestCard: {
-    padding: 15,
-    borderColor: "#D9D9D9",
-    borderWidth: 1,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  mentorName: {
-    fontFamily: "Poppins_700Bold",
-    color: "#333",
-    fontSize: 14,
-  },
-  requestStatus: {
-    fontFamily: "Poppins_400Regular",
-    color: "#666",
-    fontSize: 13,
-    marginTop: 4,
-  },
+
   textRegistrasi: {
     fontFamily: "Poppins_700Bold",
     color: "white",
@@ -383,7 +470,7 @@ const styles = StyleSheet.create({
   backgroundText: {
     padding: 4,
     borderRadius: 50,
-    width: 100,
+    width: 150,
   },
   textHeader: {
     fontFamily: "Poppins_700Bold",

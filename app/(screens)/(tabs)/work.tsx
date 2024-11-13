@@ -39,7 +39,7 @@ export default function WorkScreen() {
   // Initial fetch on component mount
   useEffect(() => {
     fetchJobData();
-  }, [fetchJobData]);
+  }, [fetchJobData, token]);
 
   // Refresh handler
   const onRefresh = useCallback(async () => {

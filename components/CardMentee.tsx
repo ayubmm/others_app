@@ -35,6 +35,7 @@ const MenteeRequestCard = ({
 }: MenteeRequestCardProps) => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
 
   const handleApprove = async () => {
     setLoading(true);
@@ -61,6 +62,31 @@ const MenteeRequestCard = ({
     }
   };
 
+  const handleReject = async () => {
+    setRejecting(true);
+    try {
+      const response = await axios.post(
+        `https://skripsi.krayu.shop/api/mentee/request/${requestId}/reject`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.status === "success") {
+        Alert.alert("Success", response.data.message);
+        onApprovalSuccess(); // Call callback to refresh data or update UI
+      } else {
+        Alert.alert("Error", response.data.message);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to reject request");
+      console.error("Rejection error:", error);
+    } finally {
+      setRejecting(false);
+    }
+  };
+
   return (
     <View style={styles.cardContainer}>
       <Text style={styles.text}>
@@ -77,21 +103,40 @@ const MenteeRequestCard = ({
         {graduation}
       </Text>
 
-      {/* Approve Button */}
-      {status !== "approved" ? (
-        <TouchableOpacity
-          style={styles.approveButton}
-          onPress={handleApprove}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.approveButtonText}>Approve</Text>
-          )}
-        </TouchableOpacity>
+      {/* Approve and Reject Buttons */}
+      {status !== "approved" && status !== "rejected" ? (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.approveButton}
+            onPress={handleApprove}
+            disabled={loading || rejecting}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.approveButtonText}>Approve</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.rejectButton}
+            onPress={handleReject}
+            disabled={loading || rejecting}
+          >
+            {rejecting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.rejectButtonText}>Reject</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       ) : (
-        <Text style={styles.approvedText}>Approved</Text>
+        <Text
+          style={
+            status === "approved" ? styles.approvedText : styles.rejectedText
+          }
+        >
+          {status === "approved" ? "Approved" : "Rejected"}
+        </Text>
       )}
     </View>
   );
@@ -119,20 +164,45 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
     color: "#2C6F9C",
   },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
   approveButton: {
     backgroundColor: "#2C6F9C",
     paddingVertical: 10,
     borderRadius: 5,
     alignItems: "center",
-    marginTop: 10,
+    flex: 1,
+    marginRight: 5,
+  },
+  rejectButton: {
+    backgroundColor: "#FF4C4C",
+    paddingVertical: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    flex: 1,
+    marginLeft: 5,
   },
   approveButtonText: {
     color: "#fff",
     fontFamily: "Poppins_700Bold",
     fontSize: 14,
   },
+  rejectButtonText: {
+    color: "#fff",
+    fontFamily: "Poppins_700Bold",
+    fontSize: 14,
+  },
   approvedText: {
     color: "#4CAF50",
+    fontFamily: "Poppins_700Bold",
+    fontSize: 14,
+    marginTop: 10,
+  },
+  rejectedText: {
+    color: "#FF4C4C",
     fontFamily: "Poppins_700Bold",
     fontSize: 14,
     marginTop: 10,

@@ -8,11 +8,14 @@ import {
   ActivityIndicator,
   ImageBackground,
   ScrollView,
+  Modal,
+  TextInput,
+  Alert,
 } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { FontAwesome } from "@expo/vector-icons";
 
-interface Profile {
+export interface Profile {
   name: string;
   email: string;
   address: string;
@@ -29,6 +32,12 @@ export default function ProfileScreen() {
   const { logout, token } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [modalVisible, setModalVisible] = useState<boolean>(false); // State for modal visibility
+  const [formData, setFormData] = useState({
+    name: "",
+    address: "",
+    phone: "",
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -42,7 +51,12 @@ export default function ProfileScreen() {
           }
         );
         const data = await response.json();
-        setProfile(data.data); // Assuming profile data is under "data"
+        setProfile(data.data);
+        setFormData({
+          name: data.data.name,
+          address: data.data.address,
+          phone: data.data.phone,
+        });
       } catch (error) {
       } finally {
         setLoading(false);
@@ -51,6 +65,29 @@ export default function ProfileScreen() {
 
     fetchProfile();
   }, [token]);
+
+  const handleEditProfile = async () => {
+    // Example API call to update the profile
+    try {
+      const response = await fetch(
+        `https://skripsi.krayu.shop/api/alumni/profile`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      const data = await response.json();
+      Alert.alert("Success", "Profile updated successfully");
+      setProfile(data.data);
+      setModalVisible(false);
+    } catch (error) {
+      Alert.alert("Error", "Failed to update profile");
+    }
+  };
 
   if (loading) {
     return (
@@ -79,8 +116,6 @@ export default function ProfileScreen() {
       {/* Profile Information */}
       <View style={styles.profileInfoContainer}>
         <Text style={styles.profileName}>{profile?.name}</Text>
-
-        {/* Location and Followers */}
         <View style={styles.locationAndFollowers}>
           <View style={styles.locationContainer}>
             <FontAwesome name="map-marker" size={16} color="#555" />
@@ -90,12 +125,13 @@ export default function ProfileScreen() {
         <Text style={styles.biodataText}>Lulusan {profile?.graduation}</Text>
 
         {/* Edit Profile Button */}
-        {/* <TouchableOpacity style={styles.editButton}>
-          <Text style={styles.editButtonText}>Edit Profil</Text>
-        </TouchableOpacity> */}
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text style={styles.editButtonText}>Edit Profile</Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Tab Menu */}
 
       {/* Biodata Section */}
       <View style={styles.biodataContainer}>
@@ -111,6 +147,54 @@ export default function ProfileScreen() {
       <TouchableOpacity style={styles.logoutButton} onPress={logout}>
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
+
+      {/* Modal for Editing Profile */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Profile</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.name}
+              onChangeText={(text) => setFormData({ ...formData, name: text })}
+              placeholder="Name"
+            />
+            <TextInput
+              style={styles.input}
+              value={formData.address}
+              onChangeText={(text) =>
+                setFormData({ ...formData, address: text })
+              }
+              placeholder="Address"
+            />
+            <TextInput
+              style={styles.input}
+              value={formData.phone}
+              onChangeText={(text) => setFormData({ ...formData, phone: text })}
+              placeholder="Phone"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleEditProfile}
+              >
+                <Text style={styles.buttonText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -119,6 +203,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
+    fontFamily: "Poppins_700Bold",
   },
   loaderContainer: {
     flex: 1,
@@ -167,46 +252,6 @@ const styles = StyleSheet.create({
     color: "#555",
     fontFamily: "Poppins_700Bold",
   },
-  followInfo: {
-    fontSize: 14,
-    color: "#777",
-    marginHorizontal: 10,
-    fontFamily: "Poppins_700Bold",
-  },
-  editButton: {
-    borderWidth: 1,
-    borderColor: "#00A0FF",
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    marginTop: 10,
-  },
-  editButtonText: {
-    color: "#00A0FF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  tabContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 20,
-    borderBottomWidth: 1,
-    borderColor: "#E5E5E5",
-  },
-  activeTab: {
-    color: "#00A0FF",
-    fontSize: 16,
-    fontWeight: "bold",
-    paddingBottom: 10,
-    borderBottomWidth: 2,
-    borderColor: "#00A0FF",
-  },
-  inactiveTab: {
-    color: "#555",
-    fontSize: 16,
-    fontWeight: "bold",
-    paddingBottom: 10,
-  },
   biodataContainer: {
     paddingHorizontal: 20,
     paddingVertical: 15,
@@ -244,5 +289,69 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  editButton: {
+    borderWidth: 1,
+    borderColor: "#00A0FF",
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  editButtonText: {
+    color: "#00A0FF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    width: "80%",
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 5,
+    padding: 10,
+    width: "100%",
+    marginBottom: 10,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  saveButton: {
+    backgroundColor: "#2196F3",
+    padding: 10,
+    borderRadius: 5,
+    width: "48%",
+    fontFamily: "Poppins_700Bold",
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#FF6B6B",
+    padding: 10,
+    borderRadius: 5,
+    width: "48%",
+    alignItems: "center",
+  },
+  buttonText: {
+    fontFamily: "Poppins_700Bold",
+    color: "white",
+    fontSize: 16,
   },
 });

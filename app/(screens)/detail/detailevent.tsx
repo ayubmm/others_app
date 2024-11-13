@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  Button,
   Alert,
 } from "react-native";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
@@ -20,6 +19,7 @@ import {
   Poppins_400Regular,
   Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
+
 type DetailEventRouteProp = RouteProp<RootStackParamList, "detail/detailevent">;
 
 const DetailEvent: React.FC = () => {
@@ -29,22 +29,16 @@ const DetailEvent: React.FC = () => {
   const navigation = useNavigation();
   const [eventData, setEventData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isRegistered, setIsRegistered] = useState(false); // State untuk status pendaftaran
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
     Poppins_700Bold,
   });
 
-  // if (!fontsLoaded) {
-  //   return (
-  //     <View style={styles.loadingContainer}>
-  //       <ActivityIndicator size="large" />
-  //     </View>
-  //   );
-  // }
-
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
+        // Fetch event details
         const response = await axios.get(
           `https://skripsi.krayu.shop/api/events/${id}`,
           {
@@ -54,6 +48,18 @@ const DetailEvent: React.FC = () => {
           }
         );
         setEventData(response.data.data);
+
+        // Check if user is already registered
+        const registrationCheck = await axios.get(
+          `https://skripsi.krayu.shop/api/events/${id}/check-registration`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setIsRegistered(registrationCheck.data.is_registered);
       } catch (error) {
         console.error("Error fetching event details:", error);
       } finally {
@@ -106,6 +112,7 @@ const DetailEvent: React.FC = () => {
                   "Berhasil!",
                   "Anda berhasil mendaftar untuk acara ini."
                 );
+                setIsRegistered(true); // Set isRegistered ke true setelah berhasil mendaftar
               } else if (
                 response.data.status === "error" &&
                 response.data.message === "Anda sudah terdaftar pada event ini."
@@ -176,8 +183,17 @@ const DetailEvent: React.FC = () => {
         <Text style={styles.description}>{eventData.description}</Text>
       </ScrollView>
 
-      <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-        <Text style={styles.registerButtonText}>Ikuti Acara</Text>
+      <TouchableOpacity
+        style={[
+          styles.registerButton,
+          isRegistered && { backgroundColor: "gray" },
+        ]}
+        onPress={handleRegister}
+        disabled={isRegistered}
+      >
+        <Text style={styles.registerButtonText}>
+          {isRegistered ? "Anda sudah mendaftar" : "Ikuti Acara"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -207,7 +223,7 @@ const styles = StyleSheet.create({
   registerButton: {
     backgroundColor: "#2E4F82",
     paddingVertical: 15,
-    borderRadius: 10, // Rounded corners
+    borderRadius: 10,
     alignItems: "center",
     marginVertical: 20,
     marginHorizontal: 20,
@@ -233,7 +249,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   title: {
     fontFamily: "Poppins_700Bold",
     fontSize: 28,

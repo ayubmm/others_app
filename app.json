@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "my-app",
+    "name": "IKASMADAJO",
     "slug": "my-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logosmadajo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
+      "image": "./assets/images/splashscreen.png",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "ios": {
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logosmadajo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.skripsheet"
@@ -38,8 +38,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "54b0be46-2ffe-48f8-b794-7a636fb14982"
+        "projectId": "7b134d3d-78b0-4127-8c60-c3564fc17acd"
       }
-    }
+    },
+    "owner": "nabilghi"
   }
 }
